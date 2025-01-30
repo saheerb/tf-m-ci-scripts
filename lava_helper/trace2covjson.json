@@ -31,7 +31,7 @@
                     "LOCATION": "mbed-crypto"
                     }
                 ],
-        "workspace": "/home/buildslave/workspace/tf-m-build-config",
+        "workspace": "/home/buildslave/agent/workspace/tf-m-build-config",
         "output_file": "covjson.json"
         },
     "elfs": [
