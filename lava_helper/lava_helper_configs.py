@@ -23,7 +23,7 @@ __version__ = "1.4.0"
 import os
 
 
-tf_downloads="https://downloads.trustedfirmware.org"
+tf_downloads="https://downloads.openci.arm.com"
 coverage_trace_plugin=tf_downloads + "/coverage-plugin/qa-tools/coverage-tool/coverage-plugin/coverage_trace.so"
 
 
