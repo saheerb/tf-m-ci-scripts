@@ -43,6 +43,11 @@ def extract_trace_data(lava_log_fname, job_dir):
 
 def coverage_reports(jobs, user_args):
     lava = test_lava_dispatch_credentials(user_args)
+    # Building coverage on SHARE_FOLDER is slow
+    # copy the SHARE_FOLDER to WORKSPACE
+    local_workspace = os.path.join(os.getenv("WORKSPACE"),os.getenv("JOB_NAME"),os.getenv("BUILD_NUMBER"))
+    run("mkdir -p %s" % (local_workspace))
+    run("cp -ar %s/. %s" % (os.getenv("SHARE_FOLDER"), local_workspace))
     for job_id, info in jobs.items():
         job_dir = info["job_dir"]
         metadata = info["metadata"]
@@ -61,8 +66,8 @@ def coverage_reports(jobs, user_args):
             dl_artifact("nspe/bin/tfm_ns.axf")
 
             script_dir = os.path.dirname(__file__)
-            run("python3 $SHARE_FOLDER/qa-tools/coverage-tool/coverage-reporting/intermediate_layer.py --config-json %s/trace2covjson.json --local-workspace $SHARE_FOLDER" % script_dir, cwd=job_dir)
-            run("python3 $SHARE_FOLDER/qa-tools/coverage-tool/coverage-reporting/generate_info_file.py --workspace $SHARE_FOLDER --json covjson.json", cwd=job_dir)
+            run("python3 $SHARE_FOLDER/qa-tools/coverage-tool/coverage-reporting/intermediate_layer.py --config-json %s/trace2covjson.json --local-workspace %s" % (script_dir, local_workspace), cwd=job_dir)
+            run("python3 $SHARE_FOLDER/qa-tools/coverage-tool/coverage-reporting/generate_info_file.py --workspace %s --json covjson.json" % (local_workspace), cwd=job_dir)
             # Remove sources, coverage of which we're not interested in (e.g.
             # 3rd party code).
             run(
