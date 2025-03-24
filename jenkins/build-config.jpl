@@ -17,73 +17,73 @@ def getUpstreamJob() {
   return cause
 }
 
-def build-config() {
-  timestamps {
-  }
-}
+// def buildConfig() {
+//   timestamps {
+//   }
+// }
 
 timestamps {
-  // node(nodeLabel) {
-  //   stage("Init") {
-  //     cleanWs()
-  //     dir("tf-m-ci-scripts") {
-  //       tfgit.checkout_ci_scripts()
-  //       sh "git rev-parse --short HEAD"
-  //       // Clone TF-M repositories so share folder can be reused by downstream jobs
-  //       sh "./clone.sh"
-  //     }
-  //   }
-  //   try {
-  //     verify = 1
-  //     stage("Build") {
-  //       // Activate UBL license for ArmClang.
-  //       if (env.CONFIG_NAME.contains("ARMCLANG")) {
-  //         withCredentials([string(credentialsId: 'ARMCLANG_UBL_CODE', variable: 'ARMCLANG_UBL_CODE')]) {
-  //           sh "tf-m-ci-scripts/jenkins/armclang-ubl.sh"
-  //         }
-  //       }
+  node(nodeLabel) {
+    stage("Init") {
+      cleanWs()
+      dir("tf-m-ci-scripts") {
+        tfgit.checkout_ci_scripts()
+        sh "git rev-parse --short HEAD"
+        // Clone TF-M repositories so share folder can be reused by downstream jobs
+        sh "./clone.sh"
+      }
+    }
+    try {
+      verify = 1
+      stage("Build") {
+        // Activate UBL license for ArmClang.
+        if (env.CONFIG_NAME.contains("ARMCLANG")) {
+          withCredentials([string(credentialsId: 'ARMCLANG_UBL_CODE', variable: 'ARMCLANG_UBL_CODE')]) {
+            sh "tf-m-ci-scripts/jenkins/armclang-ubl.sh"
+          }
+        }
 
-  //       sh "tf-m-ci-scripts/run-build.sh"
-  //     }
-  //     stage("Post") {
-  //       // Temporary, for debugging https://linaro.atlassian.net/browse/TFC-615
-  //       archiveArtifacts artifacts: 'ci_build/**', allowEmptyArchive: true
+        sh "tf-m-ci-scripts/run-build.sh"
+      }
+      stage("Post") {
+        // Temporary, for debugging https://linaro.atlassian.net/browse/TFC-615
+        archiveArtifacts artifacts: 'ci_build/**', allowEmptyArchive: true
 
-  //       archiveArtifacts 'ci_build/spe/bin/**'
-  //       archiveArtifacts 'ci_build/spe/api_ns/bin/**'
-  //       archiveArtifacts 'ci_build/spe/api_ns/interface/**'
-  //       try {
-  //         archiveArtifacts 'ci_build/nspe/bin/**'
-  //       } catch (Exception e) {
-  //         print("ci_build/nspe/bin not exists")
-  //       }
-  //       try {
-  //         archiveArtifacts 'ci_build/nspe/*.bin'
-  //       } catch (Exception e) {
-  //         print("ci_build/nspe/*.bin not exists")
-  //       }
-  //       def upstreamProject = getUpstreamJob()[0].upstreamProject
-  //       if (upstreamProject == "tf-m-build-and-test") {
-  //         archiveArtifacts 'ci_build/spe/build-spe/generated/**'
-  //       }
-  //       if (upstreamProject == "tf-m-nightly-performance"){
-  //         //Creating a folder to store memory footprint artifacts and launching the memory footprint script.
-  //         sh "mkdir -p ${SHARE_FOLDER}/Memory_footprint/"
-  //         output = sh(script: """python3 tf-m-ci-scripts/performance.py --generate-memory""", returnStdout: true).trim()
-  //         println(output)
-  //       }
-  //     }
-  //   } catch (Exception e) {
-  //     println("Archiving all build files due to build error (to allow investigate it)")
-  //     archiveArtifacts artifacts: 'ci_build/**', allowEmptyArchive: true
-  //     manager.buildFailure()
-  //     verify = -1
-  //   } finally {
-  //     g = new Gerrit()
-  //     g.verifyStatusInWorkspace(verify, env.CONFIG_NAME, 'build')
-  //     def buildStatus = (verify == 1) ? 'Successful' : 'Failed'
-  //     //g.commentInWorkspace("Build configuration ${env.CONFIG_NAME} ${buildStatus}: ${env.RUN_DISPLAY_URL}")
-  //     cleanWs()
-  //   }
-  // }
+        archiveArtifacts 'ci_build/spe/bin/**'
+        archiveArtifacts 'ci_build/spe/api_ns/bin/**'
+        archiveArtifacts 'ci_build/spe/api_ns/interface/**'
+        try {
+          archiveArtifacts 'ci_build/nspe/bin/**'
+        } catch (Exception e) {
+          print("ci_build/nspe/bin not exists")
+        }
+        try {
+          archiveArtifacts 'ci_build/nspe/*.bin'
+        } catch (Exception e) {
+          print("ci_build/nspe/*.bin not exists")
+        }
+        def upstreamProject = getUpstreamJob()[0].upstreamProject
+        if (upstreamProject == "tf-m-build-and-test") {
+          archiveArtifacts 'ci_build/spe/build-spe/generated/**'
+        }
+        if (upstreamProject == "tf-m-nightly-performance"){
+          //Creating a folder to store memory footprint artifacts and launching the memory footprint script.
+          sh "mkdir -p ${SHARE_FOLDER}/Memory_footprint/"
+          output = sh(script: """python3 tf-m-ci-scripts/performance.py --generate-memory""", returnStdout: true).trim()
+          println(output)
+        }
+      }
+    } catch (Exception e) {
+      println("Archiving all build files due to build error (to allow investigate it)")
+      archiveArtifacts artifacts: 'ci_build/**', allowEmptyArchive: true
+      manager.buildFailure()
+      verify = -1
+    } finally {
+      g = new Gerrit()
+      g.verifyStatusInWorkspace(verify, env.CONFIG_NAME, 'build')
+      def buildStatus = (verify == 1) ? 'Successful' : 'Failed'
+      //g.commentInWorkspace("Build configuration ${env.CONFIG_NAME} ${buildStatus}: ${env.RUN_DISPLAY_URL}")
+      cleanWs()
+    }
+  }
 }
