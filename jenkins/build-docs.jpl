@@ -10,49 +10,49 @@
 import org.trustedfirmware.Gerrit
 
 timestamps {
-  node("docker-amd64-tf-m-jammy") {
-    stage("Init") {
-      cleanWs()
-      dir("tf-m-ci-scripts") {
-        tfgit.checkout_ci_scripts()
-        // Clone TF-M repositories so share folder can be reused by downstream jobs
-        sh "./clone.sh"
-      }
-    }
-    try {
-      verify = 1
-      stage("Build") {
-        sh "tf-m-ci-scripts/build-docs.sh"
-      }
-      stage("Post") {
-        archiveArtifacts 'trusted-firmware-m/build/docs/**'
-      }
-    } catch (Exception e) {
-      stage("Post") {
-        archiveArtifacts 'trusted-firmware-m/build/**'
-      }
-      manager.buildFailure()
-      verify = -1
-    } finally {
-      g = new Gerrit()
-      g.verifyStatusInWorkspace(verify, "$JOB_NAME", 'build')
-      def buildStatus = (verify == 1) ? 'Successful' : 'Failed'
-      //g.commentInWorkspace("Build docs ${buildStatus}: ${env.RUN_DISPLAY_URL}")
-      cleanWs()
-    }
-  }
-  node("master") {
-    if (env.JOB_NAME.contains("tf-m-build-docs-nightly")) {
-      // Copy, then as atomically as possible replace previous docs with new.
-      sh """
-         cp -a /var/jenkins_home/jobs/$JOB_NAME/builds/$BUILD_NUMBER/archive/trusted-firmware-m/build/docs/reference_manual /var/jenkins_home/docs/reference_manual.new
-         cp -a /var/jenkins_home/jobs/$JOB_NAME/builds/$BUILD_NUMBER/archive/trusted-firmware-m/build/docs/user_guide /var/jenkins_home/docs/user_guide.new
-         rm -rf /var/jenkins_home/docs/reference_manual.old /var/jenkins_home/docs/user_guide.old
-         mv /var/jenkins_home/docs/reference_manual /var/jenkins_home/docs/reference_manual.old
-         mv /var/jenkins_home/docs/user_guide /var/jenkins_home/docs/user_guide.old
-         mv /var/jenkins_home/docs/reference_manual.new /var/jenkins_home/docs/reference_manual
-         mv /var/jenkins_home/docs/user_guide.new /var/jenkins_home/docs/user_guide
-         """
-    }
-  }
+  // node("docker-amd64-tf-m-jammy") {
+  //   stage("Init") {
+  //     cleanWs()
+  //     dir("tf-m-ci-scripts") {
+  //       tfgit.checkout_ci_scripts()
+  //       // Clone TF-M repositories so share folder can be reused by downstream jobs
+  //       sh "./clone.sh"
+  //     }
+  //   }
+  //   try {
+  //     verify = 1
+  //     stage("Build") {
+  //       sh "tf-m-ci-scripts/build-docs.sh"
+  //     }
+  //     stage("Post") {
+  //       archiveArtifacts 'trusted-firmware-m/build/docs/**'
+  //     }
+  //   } catch (Exception e) {
+  //     stage("Post") {
+  //       archiveArtifacts 'trusted-firmware-m/build/**'
+  //     }
+  //     manager.buildFailure()
+  //     verify = -1
+  //   } finally {
+  //     g = new Gerrit()
+  //     g.verifyStatusInWorkspace(verify, "$JOB_NAME", 'build')
+  //     def buildStatus = (verify == 1) ? 'Successful' : 'Failed'
+  //     //g.commentInWorkspace("Build docs ${buildStatus}: ${env.RUN_DISPLAY_URL}")
+  //     cleanWs()
+  //   }
+  // }
+  // node("master") {
+  //   if (env.JOB_NAME.contains("tf-m-build-docs-nightly")) {
+  //     // Copy, then as atomically as possible replace previous docs with new.
+  //     sh """
+  //        cp -a /var/jenkins_home/jobs/$JOB_NAME/builds/$BUILD_NUMBER/archive/trusted-firmware-m/build/docs/reference_manual /var/jenkins_home/docs/reference_manual.new
+  //        cp -a /var/jenkins_home/jobs/$JOB_NAME/builds/$BUILD_NUMBER/archive/trusted-firmware-m/build/docs/user_guide /var/jenkins_home/docs/user_guide.new
+  //        rm -rf /var/jenkins_home/docs/reference_manual.old /var/jenkins_home/docs/user_guide.old
+  //        mv /var/jenkins_home/docs/reference_manual /var/jenkins_home/docs/reference_manual.old
+  //        mv /var/jenkins_home/docs/user_guide /var/jenkins_home/docs/user_guide.old
+  //        mv /var/jenkins_home/docs/reference_manual.new /var/jenkins_home/docs/reference_manual
+  //        mv /var/jenkins_home/docs/user_guide.new /var/jenkins_home/docs/user_guide
+  //        """
+  //   }
+  // }
 }
