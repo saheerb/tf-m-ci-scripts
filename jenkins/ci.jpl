@@ -40,12 +40,12 @@ def submit_lava_tests(config, results, build_res, params, params_collection) {
   if (lava_res.result in failure_states) {
     error("LAVA Create and Submit failed at ${lava_res.getAbsoluteUrl()}")
   } else {
-    lava_des = lava_res.getDescription()
-    if (lava_des.contains(" Submitted twice!")) {
-      lava_resubmitted = true
-      lava_des = lava_des - " Submitted twice!"
-    }
-    results['lava_jobs'] += lava_des
+    // lava_des = lava_res.getDescription()
+    // if (lava_des.contains(" Submitted twice!")) {
+    //   lava_resubmitted = true
+    //   lava_des = lava_des - " Submitted twice!"
+    // }
+    // results['lava_jobs'] += lava_des
   }
   links = "Build Config: ${config}\n"
   links += "Build URL: ${build_res.getAbsoluteUrl()}\n"
