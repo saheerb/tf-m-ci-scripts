@@ -325,137 +325,137 @@ def builds = [:]
 def results = [:]
 
 timestamps {
-  // node("docker-amd64-tf-m-jammy") {
-  //   stage("Init") {
-  //     cleanWs()
-  //     dir("tf-m-ci-scripts") {
-  //       tfgit.checkout_ci_scripts()
-  //       sh "git rev-parse --short HEAD"
-  //       // Clone TF-M repositories so share folder can be reused by downstream jobs
-  //       sh "./clone.sh"
-  //     }
-  //   }
+  node("docker-amd64-tf-m-jammy") {
+    stage("Init") {
+      cleanWs()
+      dir("tf-m-ci-scripts") {
+        tfgit.checkout_ci_scripts()
+        sh "git rev-parse --short HEAD"
+        // Clone TF-M repositories so share folder can be reused by downstream jobs
+        sh "./clone.sh"
+      }
+    }
 
-  //   stage("Configs") {
-  //     dir(".") {
-  //       // Populate configs
-  //       listConfigs(configs, env.FILTER_GROUP)
-  //       results['builds'] = [:]
-  //       results['lava_jobs'] = []
-  //       for (config in configs) {
-  //         builds[config] = buildConfig(config, results)
-  //       }
-  //       if (!env.JOB_NAME.equals("tf-m-extra-build")) {
-  //         builds["docs"] = buildDocs(results)
-  //       }
-  //     }
-  //   }
+    stage("Configs") {
+      dir(".") {
+        // Populate configs
+        listConfigs(configs, env.FILTER_GROUP)
+        results['builds'] = [:]
+        results['lava_jobs'] = []
+        for (config in configs) {
+          builds[config] = buildConfig(config, results)
+        }
+        if (!env.JOB_NAME.equals("tf-m-extra-build")) {
+          builds["docs"] = buildDocs(results)
+        }
+      }
+    }
 
-  //   stage("Builds") {
-  //     def verify = 1
-  //     def success = true
-  //     dir(".") {
-  //       try {
-  //         parallel(builds)
-  //       } catch (Exception e) {
-  //         print(e)
-  //         manager.buildFailure()
-  //         verify = -1
-  //         success = false
-  //       } finally {
-  //         print("Verifying status")
-  //         g = new Gerrit()
-  //         g.verifyStatus(verify, 'tf-m-build', 'build')
-  //         print("Generating build results summary.")
-  //         def build_results_for_summary = [:]
-  //         results['builds'].each { build ->
-  //           build_results_for_summary[build.key] = ['URL': build.value.getAbsoluteUrl(),
-  //                                                   'RESULT': build.value.result]
-  //         }
-  //         emailNotification('build', build_results_for_summary)
-  //         writeCsv(build_results_for_summary, "build_results.csv")
-  //         writeHTML(build_results_for_summary, "build_links.html")
-  //       }
-  //     }
-  //   }
+    stage("Builds") {
+      def verify = 1
+      def success = true
+      dir(".") {
+        try {
+          parallel(builds)
+        } catch (Exception e) {
+          print(e)
+          manager.buildFailure()
+          verify = -1
+          success = false
+        } finally {
+          print("Verifying status")
+          g = new Gerrit()
+          g.verifyStatus(verify, 'tf-m-build', 'build')
+          print("Generating build results summary.")
+          def build_results_for_summary = [:]
+          results['builds'].each { build ->
+            build_results_for_summary[build.key] = ['URL': build.value.getAbsoluteUrl(),
+                                                    'RESULT': build.value.result]
+          }
+          emailNotification('build', build_results_for_summary)
+          writeCsv(build_results_for_summary, "build_results.csv")
+          writeHTML(build_results_for_summary, "build_links.html")
+        }
+      }
+    }
 
-  //   stage("Tests") {
-  //     dir("tf-m-ci-scripts") {
-  //       tfgit.checkout_ci_scripts()
-  //       withCredentials([string(credentialsId: 'TUXSUITE_TOKEN', variable: 'TUXSUITE_TOKEN')]) {
-  //         sh "jenkins/tuxsuite-setup.sh"
-  //       }
-  //     }
-  //     def all_jobs = []
-  //     def success = true
-  //     def test_results = [:]
-  //     print("Wait for LAVA results here...")
-  //     try {
-  //       all_jobs = submitJobsToList(results['lava_jobs'])
-  //       output = ""
-  //       if (all_jobs.size() > 0) {
-  //         dir(".") {
-  //           if (env.FILTER_GROUP == "pp_test") {
-  //             lava_timeout = 2700     // 45min
-  //           } else {
-  //             lava_timeout = 19800    // 5.5h
-  //           }
-  //           println("Waiting for up to ${lava_timeout/60} minutes.")
-  //           withCredentials([usernamePassword(credentialsId: env.LAVA_CREDENTIALS, passwordVariable: 'LAVA_TOKEN', usernameVariable: 'LAVA_USER')]) {
-  //             sh(script: """./tf-m-ci-scripts/lava_helper/lava_wait_jobs.py --job-ids ${all_jobs.join(",")} \
-  //                        --lava-url ${env.LAVA_URL} --lava-user \${LAVA_USER} --lava-token \${LAVA_TOKEN} \
-  //                        --artifacts-path cfgs --lava-timeout ${lava_timeout} > output.log
-  //                        """)
-  //             if (env.CODE_COVERAGE_EN == "TRUE") {
-  //               println("Producing merged report")
-  //               sh(script: """./tf-m-ci-scripts/lava_helper/codecov_merge.sh""")
-  //               archiveArtifacts artifacts: 'merged_report/**', allowEmptyArchive: true
-  //             }
-  //           }
-  //           if (env.JOB_NAME.equals("tf-m-nightly-performance")) {
-  //             withCredentials([string(credentialsId: 'QA_REPORTS_TOKEN', variable: 'TOKEN')]) {
-  //               sh(script: """./tf-m-ci-scripts/performance.py --send-squad --squad-token ${TOKEN} > SQUAD.log""")
-  //             }
-  //           }
-  //         }
-  //       }
-  //       else {
-  //         print("There were no LAVA jobs to test.")
-  //       }
-  //     }
-  //     catch (Exception e) {
-  //       println("ERROR: ${e}")
-  //       // We don't print stacktrace, because Jenkins pipeline use CPS conversion
-  //       // of the Groovy code, which leads to incomprehensible stacktraces.
-  //       //print(hudson.Functions.printThrowable(org.codehaus.groovy.runtime.StackTraceUtils.sanitize(e)))
-  //       success = false
-  //     } finally {
-  //       if (all_jobs.size() > 0) {
-  //         output = readFile("output.log")
-  //         println("--- output from lava_wait_jobs.py ---")
-  //         println(output)
-  //         println("--- end of output from lava_wait_jobs.py ---")
-  //         test_results = parseTestResults(output)
+    stage("Tests") {
+      dir("tf-m-ci-scripts") {
+        tfgit.checkout_ci_scripts()
+        withCredentials([string(credentialsId: 'TUXSUITE_TOKEN', variable: 'TUXSUITE_TOKEN')]) {
+          sh "jenkins/tuxsuite-setup.sh"
+        }
+      }
+      def all_jobs = []
+      def success = true
+      def test_results = [:]
+      print("Wait for LAVA results here...")
+      try {
+        all_jobs = submitJobsToList(results['lava_jobs'])
+        output = ""
+        if (all_jobs.size() > 0) {
+          dir(".") {
+            if (env.FILTER_GROUP == "pp_test") {
+              lava_timeout = 2700     // 45min
+            } else {
+              lava_timeout = 19800    // 5.5h
+            }
+            println("Waiting for up to ${lava_timeout/60} minutes.")
+            withCredentials([usernamePassword(credentialsId: env.LAVA_CREDENTIALS, passwordVariable: 'LAVA_TOKEN', usernameVariable: 'LAVA_USER')]) {
+              sh(script: """./tf-m-ci-scripts/lava_helper/lava_wait_jobs.py --job-ids ${all_jobs.join(",")} \
+                         --lava-url ${env.LAVA_URL} --lava-user \${LAVA_USER} --lava-token \${LAVA_TOKEN} \
+                         --artifacts-path cfgs --lava-timeout ${lava_timeout} > output.log
+                         """)
+              if (env.CODE_COVERAGE_EN == "TRUE") {
+                println("Producing merged report")
+                sh(script: """./tf-m-ci-scripts/lava_helper/codecov_merge.sh""")
+                archiveArtifacts artifacts: 'merged_report/**', allowEmptyArchive: true
+              }
+            }
+            if (env.JOB_NAME.equals("tf-m-nightly-performance")) {
+              withCredentials([string(credentialsId: 'QA_REPORTS_TOKEN', variable: 'TOKEN')]) {
+                sh(script: """./tf-m-ci-scripts/performance.py --send-squad --squad-token ${TOKEN} > SQUAD.log""")
+              }
+            }
+          }
+        }
+        else {
+          print("There were no LAVA jobs to test.")
+        }
+      }
+      catch (Exception e) {
+        println("ERROR: ${e}")
+        // We don't print stacktrace, because Jenkins pipeline use CPS conversion
+        // of the Groovy code, which leads to incomprehensible stacktraces.
+        //print(hudson.Functions.printThrowable(org.codehaus.groovy.runtime.StackTraceUtils.sanitize(e)))
+        success = false
+      } finally {
+        if (all_jobs.size() > 0) {
+          output = readFile("output.log")
+          println("--- output from lava_wait_jobs.py ---")
+          println(output)
+          println("--- end of output from lava_wait_jobs.py ---")
+          test_results = parseTestResults(output)
 
-  //         if (env.JOB_NAME.equals("tf-m-nightly-performance")) {
-  //           performance_output = readFile("SQUAD.log")
-  //           println("--- output from performance.py ---")
-  //           println(performance_output)
-  //           println("--- end of output from performance.py ---")
-  //         }
+          if (env.JOB_NAME.equals("tf-m-nightly-performance")) {
+            performance_output = readFile("SQUAD.log")
+            println("--- output from performance.py ---")
+            println(performance_output)
+            println("--- end of output from performance.py ---")
+          }
 
-  //         archiveArtifacts artifacts: 'test_summary.*', allowEmptyArchive: true
-  //         archiveArtifacts artifacts: 'cfgs/**', allowEmptyArchive: true
-  //         if (all_jobs.size() > 0) {
-  //           emailNotification('test', test_results)
-  //         }
-  //         verifyTestStatus(output)
-  //       }
-  //       cleanWs()
-  //       if (!success) {
-  //         error("There was an Error waiting for LAVA jobs")
-  //       }
-  //     }
-  //   }
-  // }
+          archiveArtifacts artifacts: 'test_summary.*', allowEmptyArchive: true
+          archiveArtifacts artifacts: 'cfgs/**', allowEmptyArchive: true
+          if (all_jobs.size() > 0) {
+            emailNotification('test', test_results)
+          }
+          verifyTestStatus(output)
+        }
+        cleanWs()
+        if (!success) {
+          error("There was an Error waiting for LAVA jobs")
+        }
+      }
+    }
+  }
 }
