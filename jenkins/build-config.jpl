@@ -17,7 +17,7 @@ def getUpstreamJob() {
   return cause
 }
 
-def build-config(Map config = [:]) {
+def build-config() {
   timestamps {
   }
 }
