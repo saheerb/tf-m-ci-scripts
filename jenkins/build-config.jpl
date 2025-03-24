@@ -17,6 +17,11 @@ def getUpstreamJob() {
   return cause
 }
 
+def build-config(Map config = [:]) {
+  timestamps {
+  }
+}
+
 timestamps {
   // node(nodeLabel) {
   //   stage("Init") {
